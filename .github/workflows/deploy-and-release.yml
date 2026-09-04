@@ -1,0 +1,63 @@
+name: Build and Release OTA Bundle
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'client-app/**'
+      - '.github/workflows/deploy-and-release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: client-app/package-lock.json
+
+      - name: Instalar Dependencias del Cliente
+        run: |
+          cd client-app
+          npm ci
+
+      - name: Compilar Cliente Web y Movil
+        run: |
+          cd client-app
+          npm run build
+
+      - name: Empaquetar Bundle OTA (dist.zip)
+        run: |
+          cd client-app/dist
+          zip -r ../../dist.zip .
+          cd ../..
+
+      - name: Generar Tag de Version
+        id: vars
+        run: |
+          VERSION="v1.0.${{ github.run_number }}"
+          echo "tag=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Crear GitHub Release y Publicar dist.zip
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.vars.outputs.tag }}
+          name: Release ${{ steps.vars.outputs.tag }}
+          body: |
+            Actualizacion automatica de Catedra.
+            Este paquete es consumido automaticamente por la aplicacion Android (OTA) y clientes sincronizados.
+          files: dist.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
