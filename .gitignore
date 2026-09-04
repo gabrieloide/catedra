@@ -1,0 +1,58 @@
+# Dependencias
+node_modules/
+package-lock.json.backup
+
+# Variables de entorno y secretos
+.env
+.env.local
+.env.*.local
+*.env
+
+# Sesion de WhatsApp (Seguridad critica: no subir credenciales de WhatsApp a GitHub)
+auth_session/
+*/auth_session/
+
+# Compilacion y Bundles
+dist/
+dist.zip
+build/
+.capacitor/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Archivos de Audio Temporales
+temp_class_audio.wav
+*.wav
+*.mp3
+*.m4a
+*.flac
+*.ogg
+*.opus
+
+# Sistema Operativo
+.DS_Store
+Thumbs.db
+Desktop.ini

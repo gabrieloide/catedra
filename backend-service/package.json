@@ -1,0 +1,22 @@
+{
+  "name": "notion-assistant-backend",
+  "version": "1.0.0",
+  "description": "Backend service for WhatsApp Bot, Notion AI Agent and Supabase Reminders",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.0",
+    "@notionhq/client": "^2.2.15",
+    "@supabase/supabase-js": "^2.48.1",
+    "@whiskeysockets/baileys": "^6.7.9",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "node-cron": "^3.0.3",
+    "p-limit": "^6.2.0",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
