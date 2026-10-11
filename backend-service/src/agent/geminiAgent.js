@@ -237,7 +237,7 @@ export async function processUserMessage(userMessage, conversationHistory = []) 
   const systemInstruction = {
     parts: [
       {
-        text: `Eres el Asistente Personal de Gabriel para gestion de Notion, Recordatorios y Clases.
+        text: `Eres el Asistente Personal de Grehyla para gestion de Notion, Recordatorios y Clases.
 Tus capacidades principales son:
 1. Modificar y consultar tablas de Notion (por ejemplo: posponer o mover fechas de clases de alumnos una semana mas, cambiar estados, filtrar filas).
 2. Crear y listar recordatorios proactivos con alertas de WhatsApp.
