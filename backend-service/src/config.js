@@ -19,10 +19,11 @@ export const config = {
   },
   gemini: {
     apiKey: process.env.GEMINI_API_KEY || '',
-    model: 'gemini-2.0-flash',
+    model: process.env.GEMINI_MODEL || 'gemini-3.8-flash',
   },
   whatsapp: {
     targetPhoneNumber: process.env.TARGET_PHONE_NUMBER || '',
+    targetGroupJid: process.env.TARGET_GROUP_JID || '',
     authDir: path.resolve(__dirname, '../auth_session'),
   },
   scheduler: {

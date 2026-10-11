@@ -49,7 +49,8 @@ class GeminiTranscriber:
         # Esperar estado ACTIVE si es necesario
         time.sleep(2)
 
-        generate_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={self.api_key}"
+        model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+        generate_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.api_key}"
 
         prompt = f"""
 Actua como un asistente academico especializado en transcripcion y analisis pedagogico de clases universitarias/escolares.

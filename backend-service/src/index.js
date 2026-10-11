@@ -29,6 +29,125 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Endpoint para disparar un mensaje de prueba al WhatsApp del usuario
+app.all('/api/send-test', async (req, res) => {
+  try {
+    const text =
+      req.query?.text ||
+      req.body?.text ||
+      '¡Hola! Soy tu Asistente Catedra conectado a Notion y Recordatorios.';
+    const destination = req.query?.recipient || req.body?.recipient || config.whatsapp.targetGroupJid || config.whatsapp.targetPhoneNumber;
+    const success = await whatsAppBot.sendDirectMessage(destination, text);
+    res.json({ success, recipient: destination });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint para consultar informacion del grupo configurado
+app.get('/api/group-info', async (req, res) => {
+  try {
+    const groupId = config.whatsapp.targetGroupJid || '120363414956595581@g.us';
+    const meta = await whatsAppBot.sock?.groupMetadata(groupId);
+    res.json({ subject: meta?.subject, id: meta?.id, participants: meta?.participants?.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint visual para escanear codigo QR de WhatsApp facilmente desde el navegador
+app.get('/qr', (req, res) => {
+  if (whatsAppBot.isReady) {
+    return res.send(`
+      <!DOCTYPE html>
+      <html lang="es">
+      <head>
+        <meta charset="utf-8">
+        <title>WhatsApp Conectado - Catedra</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #064e3b; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; text-align: center; }
+          .card { background: #047857; padding: 40px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); max-width: 400px; }
+          h1 { margin-top: 0; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <h1>Dispositivo Vinculado</h1>
+          <p>WhatsApp ya esta conectado correctamente a Catedra. Las credenciales estan guardadas en local.</p>
+        </div>
+      </body>
+      </html>
+    `);
+  }
+
+  const qr = whatsAppBot.latestQr;
+  if (!qr) {
+    return res.send(`
+      <!DOCTYPE html>
+      <html lang="es">
+      <head>
+        <meta charset="utf-8">
+        <title>Iniciando WhatsApp...</title>
+        <meta http-equiv="refresh" content="2">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: white; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div>
+          <h2>Generando codigo QR...</h2>
+          <p>Por favor espera unos segundos...</p>
+        </div>
+      </body>
+      </html>
+    `);
+  }
+
+  const qrImageUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=' + encodeURIComponent(qr);
+
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <title>Escanear QR de WhatsApp - Catedra</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta http-equiv="refresh" content="10">
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+        .card { background: #1e293b; border-radius: 16px; padding: 32px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; max-width: 440px; width: 100%; border: 1px solid #334155; }
+        h1 { margin-top: 0; font-size: 1.5rem; color: #38bdf8; }
+        p { color: #94a3b8; font-size: 0.95rem; line-height: 1.5; margin: 10px 0; }
+        .qr-wrapper { background: white; padding: 16px; border-radius: 12px; display: inline-block; margin: 20px 0; }
+        img { display: block; width: 280px; height: 280px; }
+        .steps { text-align: left; background: #0f172a; padding: 14px 20px; border-radius: 8px; font-size: 0.85rem; color: #cbd5e1; margin-top: 15px; }
+        .steps ol { margin: 0; padding-left: 20px; }
+        .steps li { margin-bottom: 6px; }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <h1>Vincular WhatsApp</h1>
+        <p>Abre WhatsApp en tu teléfono y escanea este código:</p>
+        <div class="qr-wrapper">
+          <img src="${qrImageUrl}" alt="Codigo QR de WhatsApp" />
+        </div>
+        <div class="steps">
+          <ol>
+            <li>Abre <b>WhatsApp</b> en tu telefono</li>
+            <li>Toca los tres puntos o <b>Ajustes</b></li>
+            <li>Selecciona <b>Dispositivos vinculados</b></li>
+            <li>Toca <b>Vincular un dispositivo</b> y apunta a la pantalla</li>
+          </ol>
+        </div>
+        <p style="font-size: 0.8rem; color: #64748b; margin-top: 15px;">Se actualiza automaticamente si expira. Solo se escanea una vez.</p>
+      </div>
+    </body>
+    </html>
+  `);
+});
+
 // Endpoint para consultar recordatorios
 app.get('/api/reminders', async (req, res) => {
   try {

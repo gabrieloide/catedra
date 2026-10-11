@@ -4,7 +4,13 @@ import { config } from '../config.js';
 class RemindersService {
   constructor() {
     this.client = null;
-    if (config.supabase.url && config.supabase.serviceRoleKey) {
+    const isConfigured =
+      config.supabase.url &&
+      !config.supabase.url.includes('your-project') &&
+      config.supabase.serviceRoleKey &&
+      !config.supabase.serviceRoleKey.includes('your_supabase');
+
+    if (isConfigured) {
       this.client = createClient(config.supabase.url, config.supabase.serviceRoleKey);
     } else {
       console.warn('[Supabase] Credenciales no configuradas. Los recordatorios funcionaran en memoria local.');
@@ -19,7 +25,7 @@ class RemindersService {
       return this.localReminders.filter((r) => {
         if (r.status !== 'pending') return false;
         const due = new Date(r.due_date);
-        const notifyTime = new Date(due.getTime() - (r.notify_before_minutes || 30) * 60000);
+        const notifyTime = new Date(due.getTime() - (r.notify_before_minutes || 0) * 60000);
         return now >= notifyTime;
       });
     }
@@ -27,8 +33,7 @@ class RemindersService {
     const { data, error } = await this.client
       .from('reminders')
       .select('*')
-      .eq('status', 'pending')
-      .lte('due_date', new Date(Date.now() + 60 * 60 * 1000).toISOString()); // Trae proximos a 1 hora
+      .eq('status', 'pending');
 
     if (error) {
       console.error('[Supabase Error] Fallo al consultar recordatorios:', error.message);
@@ -38,7 +43,7 @@ class RemindersService {
     const now = new Date();
     return (data || []).filter((r) => {
       const due = new Date(r.due_date);
-      const notifyTime = new Date(due.getTime() - (r.notify_before_minutes || 30) * 60000);
+      const notifyTime = new Date(due.getTime() - (r.notify_before_minutes || 0) * 60000);
       return now >= notifyTime;
     });
   }
@@ -62,7 +67,7 @@ class RemindersService {
   }
 
   // Crear un nuevo recordatorio
-  async createReminder({ title, description = '', dueDate, notifyBeforeMinutes = 30 }) {
+  async createReminder({ title, description = '', dueDate, notifyBeforeMinutes = 0 }) {
     const payload = {
       title,
       description,

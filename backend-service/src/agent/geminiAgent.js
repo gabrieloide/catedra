@@ -59,7 +59,7 @@ const toolDeclarations = [
         title: { type: 'STRING', description: 'Titulo o descripcion corta del recordatorio.' },
         description: { type: 'STRING', description: 'Detalles adicionales.' },
         due_date_iso: { type: 'STRING', description: 'Fecha y hora limite en formato ISO 8601 (YYYY-MM-DDTHH:mm:ssZ).' },
-        notify_before_minutes: { type: 'INTEGER', description: 'Minutos de anticipacion para enviar la alerta por WhatsApp (por defecto 30).' },
+        notify_before_minutes: { type: 'INTEGER', description: 'Minutos de anticipacion para enviar la alerta por WhatsApp (0 para avisar en el momento exacto. Por defecto 0).' },
       },
       required: ['title', 'due_date_iso'],
     },
@@ -206,7 +206,7 @@ async function executeTool(name, args) {
         title: args.title,
         description: args.description || '',
         dueDate: args.due_date_iso,
-        notifyBeforeMinutes: args.notify_before_minutes || 30,
+        notifyBeforeMinutes: args.notify_before_minutes !== undefined ? args.notify_before_minutes : 0,
       });
       return { message: 'Recordatorio creado exitosamente', reminder: created };
     }
@@ -247,7 +247,8 @@ Reglas estrictas de comunicacion:
 - Cero emojis en tus respuestas.
 - Cero guiones o guiones largos en textos de interfaz.
 - Responde siempre de forma concisa, educada y clara en espanol.
-- Cuando realices cambios en Notion o crees un recordatorio, resume con precision lo que hiciste (ejemplo: 'Se actualizaron las fechas de 2 alumnos: Juan (10/09 a 17/09) y Maria (10/09 a 17/09)').
+- Cuando realices cambios en Notion o crees un recordatorio, resume con precision lo que hiciste.
+- Para recordatorios, notifica exactamente a la hora y fecha solicitada por el usuario (notify_before_minutes: 0). No agregues anticipacion de 30 minutos ni menciones avisos previos a menos que el usuario lo pida de forma explicita.
 - Fecha y hora actual de referencia: ${new Date().toISOString()}`,
       },
     ],
@@ -276,15 +277,35 @@ Reglas estrictas de comunicacion:
       },
     };
 
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+    let response;
+    let fetchAttempts = 0;
+    while (fetchAttempts < 3) {
+      fetchAttempts++;
+      try {
+        response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Gemini API Error (${response.status}): ${errText}`);
+        if (response.ok) break;
+
+        if ((response.status === 503 || response.status === 429) && fetchAttempts < 3) {
+          console.warn(`[Gemini API] Estado ${response.status}. Reintentando en ${fetchAttempts * 1500}ms...`);
+          await new Promise((r) => setTimeout(r, fetchAttempts * 1500));
+          continue;
+        }
+
+        const errText = await response.text();
+        throw new Error(`Gemini API Error (${response.status}): ${errText}`);
+      } catch (err) {
+        if (fetchAttempts < 3) {
+          console.warn(`[Gemini API] Reintentando tras fallo (${err.message})...`);
+          await new Promise((r) => setTimeout(r, fetchAttempts * 1500));
+          continue;
+        }
+        throw err;
+      }
     }
 
     const data = await response.json();
@@ -332,4 +353,64 @@ Reglas estrictas de comunicacion:
   }
 
   return 'Se alcanzo el limite de pasos para procesar la solicitud.';
+}
+
+// Transcriptor rapido de notas de voz usando Gemini Multimodal
+export async function transcribeAudio(audioBuffer, mimeType = 'audio/ogg') {
+  if (!config.gemini.apiKey) {
+    throw new Error('GEMINI_API_KEY no esta configurada en .env');
+  }
+
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${config.gemini.model}:generateContent?key=${config.gemini.apiKey}`;
+
+  const payload = {
+    contents: [
+      {
+        parts: [
+          {
+            text: 'Eres un transcriptor de notas de voz en espanol. Transcribe exactamente el mensaje de audio palabra por palabra. Responde UNICAMENTE con la transcripcion textual directa, sin comillas, sin introducciones y sin comentarios adicionales.',
+          },
+          {
+            inline_data: {
+              mime_type: mimeType,
+              data: audioBuffer.toString('base64'),
+            },
+          },
+        ],
+      },
+    ],
+  };
+
+  let response;
+  let fetchAttempts = 0;
+  while (fetchAttempts < 3) {
+    fetchAttempts++;
+    try {
+      response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) break;
+
+      if ((response.status === 503 || response.status === 429) && fetchAttempts < 3) {
+        await new Promise((r) => setTimeout(r, fetchAttempts * 1500));
+        continue;
+      }
+
+      const errText = await response.text();
+      throw new Error(`Gemini Audio API Error (${response.status}): ${errText}`);
+    } catch (err) {
+      if (fetchAttempts < 3) {
+        await new Promise((r) => setTimeout(r, fetchAttempts * 1500));
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  const data = await response.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  return text.trim();
 }

@@ -32,9 +32,9 @@ class ReminderWorker {
 
     console.log(`[Scheduler] ${dueReminders.length} recordatorio(s) listo(s) para enviar.`);
 
-    const targetPhone = config.whatsapp.targetPhoneNumber;
-    if (!targetPhone) {
-      console.warn('[Scheduler] TARGET_PHONE_NUMBER no configurado en .env. No se pueden enviar alertas.');
+    const targetDestination = config.whatsapp.targetGroupJid || whatsAppBot.lastGroupJid || config.whatsapp.targetPhoneNumber;
+    if (!targetDestination) {
+      console.warn('[Scheduler] Ningun destinatario configurado en .env ni grupo detectado. No se pueden enviar alertas.');
       return;
     }
 
@@ -48,10 +48,9 @@ class ReminderWorker {
         `ALERTA DE RECORDATORIO\n\n` +
         `Titulo: ${reminder.title}\n` +
         (reminder.description ? `Detalles: ${reminder.description}\n` : '') +
-        `Fecha Limite: ${dueDateFormatted}\n` +
-        `Anticipacion: ${reminder.notify_before_minutes || 30} minutos`;
+        `Hora: ${dueDateFormatted}`;
 
-      const sent = await whatsAppBot.sendDirectMessage(targetPhone, message);
+      const sent = await whatsAppBot.sendDirectMessage(targetDestination, message);
       if (sent) {
         await remindersService.markAsNotified(reminder.id);
       }

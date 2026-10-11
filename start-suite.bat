@@ -39,7 +39,7 @@ set /p opt="Opcion (1-5): "
 
 if "%opt%"=="1" (
     cd backend-service
-    npm start
+    call npm start
 )
 if "%opt%"=="2" (
     cd desktop-transcriber
@@ -47,7 +47,7 @@ if "%opt%"=="2" (
 )
 if "%opt%"=="3" (
     cd client-app
-    npm run dev
+    call npm run dev
 )
 if "%opt%"=="4" (
     call install.bat
