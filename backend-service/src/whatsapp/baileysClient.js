@@ -66,7 +66,15 @@ class WhatsAppBot {
         if (shouldReconnect) {
           setTimeout(() => this.initialize(), 5000);
         } else {
-          console.error('[WhatsApp] Sesion cerrada manualmente desde el telefono. Elimina auth_session para reiniciar.');
+          console.warn('[WhatsApp] Sesion cerrada desde el telefono. Limpiando credenciales y generando nuevo QR...');
+          const authDir = config.whatsapp.authDir;
+          if (fs.existsSync(authDir)) {
+            try {
+              fs.rmSync(authDir, { recursive: true, force: true });
+            } catch (_) {}
+          }
+          this.latestQr = null;
+          setTimeout(() => this.initialize(), 2000);
         }
       } else if (connection === 'open') {
         this.isReady = true;
@@ -115,6 +123,12 @@ class WhatsAppBot {
             msg.message;
 
           const isGroup = remoteJid.endsWith('@g.us');
+          const isBotOwnPhone = Boolean(myJidPrefix && targetNumber && (myJidPrefix.includes(targetNumber) || targetNumber.includes(myJidPrefix)));
+
+          // Si el bot corre en un numero secundario, ignorar mensajes que provengan del propio bot (fromMe)
+          if (!isBotOwnPhone && msg.key.fromMe) {
+            continue;
+          }
 
           if (isGroup) {
             // Si hay un grupo asignado para el asistente, ignorar completamente cualquier otro grupo (ej. familia, trabajo)

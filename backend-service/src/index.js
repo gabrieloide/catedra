@@ -1,4 +1,5 @@
 import express from 'express';
+import fs from 'fs';
 import { config } from './config.js';
 import { whatsAppBot } from './whatsapp/baileysClient.js';
 import { reminderWorker } from './scheduler/reminderWorker.js';
@@ -74,7 +75,10 @@ app.get('/qr', (req, res) => {
       <body>
         <div class="card">
           <h1>Dispositivo Vinculado</h1>
-          <p>WhatsApp ya esta conectado correctamente a Catedra. Las credenciales estan guardadas en local.</p>
+          <p>WhatsApp ya esta conectado correctamente a Catedra.</p>
+          <div style="margin-top: 25px;">
+            <a href="/reset" style="display: inline-block; background: #dc2626; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold;" onclick="return confirm('¿Deseas desvincular este WhatsApp y conectar otro número?')">Desvincular y Cambiar Número</a>
+          </div>
         </div>
       </body>
       </html>
@@ -142,10 +146,35 @@ app.get('/qr', (req, res) => {
           </ol>
         </div>
         <p style="font-size: 0.8rem; color: #64748b; margin-top: 15px;">Se actualiza automaticamente si expira. Solo se escanea una vez.</p>
+        <div style="margin-top: 15px;">
+          <a href="/reset" style="color: #f87171; text-decoration: none; font-size: 0.85rem;" onclick="return confirm('¿Deseas desvincular y generar un nuevo QR?')">🔄 Desvincular / Cambiar de número</a>
+        </div>
       </div>
     </body>
     </html>
   `);
+});
+
+// Endpoint para reiniciar sesion de WhatsApp y generar un nuevo codigo QR
+app.get('/reset', async (req, res) => {
+  try {
+    console.log('[WhatsApp] Reiniciando sesion para nuevo numero via /reset...');
+    if (whatsAppBot.sock) {
+      try {
+        await whatsAppBot.sock.logout();
+      } catch (_) {}
+    }
+    const authDir = config.whatsapp.authDir;
+    if (fs.existsSync(authDir)) {
+      fs.rmSync(authDir, { recursive: true, force: true });
+    }
+    whatsAppBot.isReady = false;
+    whatsAppBot.latestQr = null;
+    await whatsAppBot.initialize();
+    res.redirect('/qr');
+  } catch (err) {
+    res.status(500).send('Error al reiniciar sesion de WhatsApp: ' + err.message);
+  }
 });
 
 // Endpoint para consultar recordatorios
