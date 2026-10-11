@@ -47,21 +47,32 @@ Aplicacion multiplataforma para PC Windows y Android:
 
 ---
 
-## Guia de Puesta en Marcha
+## Guia de Puesta en Marcha en un Nuevo Equipo
 
-### Paso 1: Configurar Supabase
+### Paso 1: Instalacion Automatica de Dependencias
+En una computadora nueva, clona el repositorio o copia la carpeta del proyecto y ejecuta con doble clic:
+```powershell
+install.bat
+```
+El instalador se encargara automaticamente de:
+* Verificar que Git, Node.js y Python esten instalados (o sugerir/instalar su descarga si faltan).
+* Instalar las dependencias de Node.js en `backend-service` y `client-app`.
+* Instalar las librerias de Python en `desktop-transcriber`.
+* Generar los archivos `.env` a partir de sus plantillas y abrirlos en el Bloc de notas.
+
+### Paso 2: Configurar Supabase
 1. Abre tu proyecto en Supabase (o crea uno gratuito en [supabase.com](https://supabase.com)).
 2. Ingresa al **SQL Editor** y ejecuta el script:
    `backend-service/supabase_schema.sql`
 3. Copia la URL del proyecto y la clave `service_role` (Settings -> API).
 
-### Paso 2: Configurar Notion y Gemini
+### Paso 3: Configurar Notion y Gemini
 1. Crea una integracion en [notion.so/my-integrations](https://www.notion.so/my-integrations) y copia el Token de integracion (`ntn_...`).
 2. Conecta la integracion a tus bases de datos de Notas y Clases en Notion (Menu de tres puntos -> Conexiones -> Agregar tu integracion).
 3. Obtiene una clave de API gratuita en [Google AI Studio](https://aistudio.google.com/).
 
-### Paso 3: Configurar Archivos de Entorno
-Crea un archivo `.env` dentro de `backend-service/` tomando como base `.env.example`:
+### Paso 4: Rellenar las Claves en los Archivos .env
+En `backend-service/.env`:
 ```env
 NOTION_API_KEY=ntn_tu_clave_notion
 NOTION_NOTES_DATABASE_ID=id_base_datos_notas
@@ -72,16 +83,17 @@ GEMINI_API_KEY=tu_clave_gemini
 TARGET_PHONE_NUMBER=584120000000
 ```
 
-Crea un archivo `.env` dentro de `desktop-transcriber/` tomando como base `.env.example`:
+En `desktop-transcriber/.env`:
 ```env
 GEMINI_API_KEY=tu_clave_gemini
 NOTION_API_KEY=ntn_tu_clave_notion
 NOTION_CLASSES_DATABASE_ID=id_base_datos_clases
 ```
 
-### Paso 4: Iniciar Suite
+### Paso 5: Iniciar Suite
 Ejecuta con doble clic el lanzador:
 ```powershell
 start-suite.bat
 ```
 Al iniciar el backend por primera vez, escanea el codigo QR desde WhatsApp (Dispositivos vinculados).
+

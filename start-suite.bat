@@ -21,13 +21,21 @@ if %errorlevel% equ 0 (
     echo.
 )
 
+if not exist "backend-service\node_modules" (
+    echo [AVISO] Dependencias no encontradas. Ejecutando instalador automatico...
+    echo.
+    call install.bat
+    echo.
+)
+
 echo Selecciona el servicio a iniciar:
 echo 1. Iniciar Servidor Backend (Bot WhatsApp, Scheduler y Notion Agent)
 echo 2. Iniciar Grabador y Transcriptor de Clases (App PC)
 echo 3. Iniciar Aplicacion Cliente (Android/PC Web Dev Server)
-echo 4. Salir
+echo 4. Instalar o reparar dependencias del sistema
+echo 5. Salir
 echo.
-set /p opt="Opcion (1-4): "
+set /p opt="Opcion (1-5): "
 
 if "%opt%"=="1" (
     cd backend-service
@@ -42,6 +50,10 @@ if "%opt%"=="3" (
     npm run dev
 )
 if "%opt%"=="4" (
+    call install.bat
+)
+if "%opt%"=="5" (
     exit
 )
 pause
+
