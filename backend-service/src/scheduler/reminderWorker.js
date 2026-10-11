@@ -45,10 +45,10 @@ class ReminderWorker {
       });
 
       const message =
-        `ALERTA DE RECORDATORIO\n\n` +
-        `Titulo: ${reminder.title}\n` +
-        (reminder.description ? `Detalles: ${reminder.description}\n` : '') +
-        `Hora: ${dueDateFormatted}`;
+        `⏰ *¡Hola Grehyla! Te recuerdo:* ✨\n\n` +
+        `📌 *${reminder.title}*` +
+        (reminder.description ? `\n💬 ${reminder.description}` : '') +
+        `\n\n🕒 *Hora programada:* ${dueDateFormatted} 😊`;
 
       const sent = await whatsAppBot.sendDirectMessage(targetDestination, message);
       if (sent) {
